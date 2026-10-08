@@ -16,14 +16,17 @@ app = FastAPI(title="Football AI Coach API")
 
 # ---------------------------------------------------------------------------
 # CORS: разрешаем запросы с любого источника (Claude Artifacts, мобильное
-# приложение, локальный фронтенд). При allow_origins=["*"] куки/credentials
-# использовать нельзя, поэтому allow_credentials=False.
+# приложение, локальный фронтенд).
+# Middleware должен быть добавлен ДО объявления эндпоинтов.
+# Starlette при allow_origins=["*"] и allow_credentials=True сам подставляет
+# в ответ конкретный Origin запроса (для preflight и запросов с cookie),
+# так что "звёздочка" вместе с credentials не ломает preflight.
 # В продакшене лучше заменить "*" на список конкретных доменов.
 # ---------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
