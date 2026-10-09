@@ -1,0 +1,60 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List
+
+app = FastAPI()
+
+# Разрешаем нашему фронтенду PITCHMIND из окон Claude Artifacts общаться с сервером
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Разрешает запросы со всех сайтов (включая claude.ai)
+    allow_credentials=True,
+    allow_methods=["*"],  # Разрешает все типы запросов (GET, POST)
+    allow_headers=["*"],  # Разрешает любые заголовки
+)
+
+# Временная база данных пользователей в оперативной памяти Vercel Edge
+users_db = {
+    "alex": {
+        "name": "Алекс",
+        "balls": 150,
+        "rank": "Академия 🏃‍♂️",
+        "unlocked_trophies": []
+    }
+}
+
+class ProgressUpdate(BaseModel):
+    balls: int
+    unlocked_trophies: List[str]
+
+@app.get("/")
+def read_root():
+    return {
+        "status": "Live", 
+        "message": "Добро пожаловать на тактическую базу ИИ-Тренера PITCHMIND на Vercel!"
+    }
+
+@app.get("/api/user/{user_id}")
+def get_user(user_id: str):
+    if user_id in users_db:
+        return users_db[user_id]
+    return {"name": "Новичок", "balls": 150, "rank": "Академия 🏃‍♂️", "unlocked_trophies": []}
+
+@app.post("/api/user/{user_id}/progress")
+def update_progress(user_id: str, data: ProgressUpdate):
+    if user_id not in users_db:
+        users_db[user_id] = {"name": user_id, "balls": 150, "rank": "Академия 🏃‍♂️", "unlocked_trophies": []}
+    
+    users_db[user_id]["balls"] = data.balls
+    users_db[user_id]["unlocked_trophies"] = data.unlocked_trophies
+    
+    # Расчет футбольных рангов
+    if data.balls < 300:
+        users_db[user_id]["rank"] = "Академия 🏃‍♂️"
+    elif data.balls < 1000:
+        users_db[user_id]["rank"] = "Игрок дубля 👟"
+    else:
+        users_db[user_id]["rank"] = "Звезда основы 🏆"
+        
+    return users_db[user_id]
